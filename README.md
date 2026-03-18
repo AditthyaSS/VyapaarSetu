@@ -1,2 +1,2 @@
 # VyapaarSetu
-From Dukaan to Digital.
+From Dukaan to Digital. A business Suite for all small businesses....
