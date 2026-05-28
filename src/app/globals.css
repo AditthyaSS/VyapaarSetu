@@ -1,0 +1,117 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Light mode (default) ─────────────────────────────────────── */
+:root {
+  --background: 0 0% 98%;
+  --foreground: 0 0% 8%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 8%;
+  --primary: 142 71% 38%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 0 0% 94%;
+  --secondary-foreground: 0 0% 8%;
+  --muted: 0 0% 94%;
+  --muted-foreground: 0 0% 40%;
+  --accent: 0 0% 94%;
+  --accent-foreground: 0 0% 8%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 0 0% 88%;
+  --input: 0 0% 88%;
+  --ring: 142 71% 38%;
+  --radius: 0.5rem;
+
+  /* Atlas semantic tokens — light */
+  --atlas-bg-primary:    #ffffff;
+  --atlas-bg-secondary:  #f5f5f5;
+  --atlas-bg-tertiary:   #ebebeb;
+  --atlas-bg-card:       #fafafa;
+  --atlas-border:        #e0e0e0;
+  --atlas-border-hover:  #c8c8c8;
+  --atlas-text-primary:  #111111;
+  --atlas-text-secondary:#555555;
+  --atlas-text-muted:    #999999;
+}
+
+/* ─── Dark mode ─────────────────────────────────────────────────── */
+.dark {
+  --background: 0 0% 4%;
+  --foreground: 0 0% 94%;
+  --card: 0 0% 8%;
+  --card-foreground: 0 0% 94%;
+  --primary: 142 71% 45%;
+  --primary-foreground: 0 0% 4%;
+  --secondary: 0 0% 10%;
+  --secondary-foreground: 0 0% 94%;
+  --muted: 0 0% 10%;
+  --muted-foreground: 0 0% 53%;
+  --accent: 0 0% 10%;
+  --accent-foreground: 0 0% 94%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 94%;
+  --border: 0 0% 16%;
+  --input: 0 0% 16%;
+  --ring: 142 71% 45%;
+
+  /* Atlas semantic tokens — dark */
+  --atlas-bg-primary:    #0a0a0a;
+  --atlas-bg-secondary:  #111111;
+  --atlas-bg-tertiary:   #1a1a1a;
+  --atlas-bg-card:       #141414;
+  --atlas-border:        #2a2a2a;
+  --atlas-border-hover:  #3a3a3a;
+  --atlas-text-primary:  #f0f0f0;
+  --atlas-text-secondary:#888888;
+  --atlas-text-muted:    #555555;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--atlas-bg-primary);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--atlas-border);
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--atlas-border-hover);
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-atlas-green to-atlas-blue;
+  }
+
+  .glass {
+    @apply backdrop-blur-md;
+    background: color-mix(in srgb, var(--atlas-bg-primary) 85%, transparent);
+  }
+
+  .grid-pattern {
+    background-image: linear-gradient(rgba(128, 128, 128, 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(128, 128, 128, 0.06) 1px, transparent 1px);
+    background-size: 64px 64px;
+  }
+}

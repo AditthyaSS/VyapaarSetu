@@ -1,0 +1,206 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id                String         @id @default(uuid())
+  githubUsername     String         @unique @map("github_username")
+  avatarUrl         String?        @map("avatar_url")
+  bio               String?
+  contributionScore Int            @default(0) @map("contribution_score")
+  createdAt         DateTime       @default(now()) @map("created_at")
+
+  reviews           Review[]
+  contributions     Contribution[]
+  votes             Vote[]
+  feedEvents        FeedEvent[]
+
+  @@map("users")
+}
+
+model Provider {
+  id          String    @id @default(uuid())
+  name        String    @unique
+  website     String?
+  description String?
+  hqCountry   String?   @map("hq_country")
+  foundedAt   DateTime? @map("founded_at")
+  logoUrl     String?   @map("logo_url")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  models      Model[]
+
+  @@map("providers")
+}
+
+model Model {
+  id                 String     @id @default(uuid())
+  providerId         String     @map("provider_id")
+  name               String
+  slug               String     @unique
+  description        String?
+  contextWindow      Int?       @map("context_window")
+  inputPricePerMtok  Float?     @map("input_price_per_mtok")
+  outputPricePerMtok Float?     @map("output_price_per_mtok")
+  license            String?
+  modalities         String[]
+  isOpenSource       Boolean    @default(false) @map("is_open_source")
+  parameterCount     String?    @map("parameter_count")
+  apiAvailable       Boolean    @default(true) @map("api_available")
+  tags               String[]
+  benchmarkGpqa      Float?     @map("benchmark_gpqa")
+  benchmarkMmlu      Float?     @map("benchmark_mmlu")
+  benchmarkHle       Float?     @map("benchmark_hle")
+  speedToksPerSec    Float?     @map("speed_toks_per_sec")
+  releasedAt         DateTime?  @map("released_at")
+  deprecatedAt       DateTime?  @map("deprecated_at")
+  isVerified         Boolean    @default(false) @map("is_verified")
+  createdAt          DateTime   @default(now()) @map("created_at")
+  updatedAt          DateTime   @updatedAt @map("updated_at")
+
+  provider           Provider   @relation(fields: [providerId], references: [id])
+  modelTags          ModelTag[]
+  tools              Tool[]
+
+  @@map("models")
+}
+
+model ModelTag {
+  id       String  @id @default(uuid())
+  modelId  String  @map("model_id")
+  tag      String
+  category String?
+
+  model    Model   @relation(fields: [modelId], references: [id])
+
+  @@map("model_tags")
+}
+
+model Tool {
+  id             String   @id @default(uuid())
+  primaryModelId String?  @map("primary_model_id")
+  name           String
+  slug           String   @unique
+  description    String?
+  category       String?
+  pricingType    String?  @map("pricing_type")
+  websiteUrl     String?  @map("website_url")
+  avgRating      Float    @default(0) @map("avg_rating")
+  reviewCount    Int      @default(0) @map("review_count")
+  isVerified     Boolean  @default(false) @map("is_verified")
+  addedAt        DateTime @default(now()) @map("added_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  primaryModel   Model?   @relation(fields: [primaryModelId], references: [id])
+  tags           ToolTag[]
+
+  @@map("tools")
+}
+
+model ToolTag {
+  id     String @id @default(uuid())
+  toolId String @map("tool_id")
+  tag    String
+
+  tool   Tool   @relation(fields: [toolId], references: [id])
+
+  @@map("tool_tags")
+}
+
+model Repo {
+  id              String         @id @default(uuid())
+  githubOrg       String         @map("github_org")
+  githubRepo      String         @map("github_repo")
+  description     String?
+  primaryLanguage String?        @map("primary_language")
+  stars           Int            @default(0)
+  forks           Int            @default(0)
+  isTrending      Boolean        @default(false) @map("is_trending")
+  topics          String[]
+  lastSyncedAt    DateTime?      @map("last_synced_at")
+  addedAt         DateTime       @default(now()) @map("added_at")
+
+  snapshots       RepoSnapshot[]
+
+  @@unique([githubOrg, githubRepo])
+  @@map("repos")
+}
+
+model RepoSnapshot {
+  id         String   @id @default(uuid())
+  repoId     String   @map("repo_id")
+  stars      Int
+  forks      Int
+  openIssues Int      @map("open_issues")
+  recordedAt DateTime @default(now()) @map("recorded_at")
+
+  repo       Repo     @relation(fields: [repoId], references: [id])
+
+  @@map("repo_snapshots")
+}
+
+model Review {
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  entityType   String   @map("entity_type")
+  entityId     String   @map("entity_id")
+  rating       Int
+  comment      String?
+  helpfulVotes Int      @default(0) @map("helpful_votes")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  user         User     @relation(fields: [userId], references: [id])
+
+  @@map("reviews")
+}
+
+model Contribution {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  entityType String   @map("entity_type")
+  entityId   String?  @map("entity_id")
+  action     String
+  diff       Json?
+  status     String   @default("pending")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user       User     @relation(fields: [userId], references: [id])
+
+  @@map("contributions")
+}
+
+model Vote {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  entityType String   @map("entity_type")
+  entityId   String   @map("entity_id")
+  value      Int
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user       User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, entityType, entityId])
+  @@map("votes")
+}
+
+model FeedEvent {
+  id         String   @id @default(uuid())
+  userId     String?  @map("user_id")
+  eventType  String   @map("event_type")
+  entityType String   @map("entity_type")
+  entityId   String   @map("entity_id")
+  entityName String   @map("entity_name")
+  metadata   Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user       User?    @relation(fields: [userId], references: [id])
+
+  @@map("feed_events")
+}

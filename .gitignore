@@ -1,0 +1,40 @@
+# ─── Dependencies ────────────────────────────────────────────────
+/node_modules
+/.pnp
+.pnp.js
+.yarn/install-state.gz
+
+# ─── Environment & Secrets (NEVER commit these) ──────────────────
+.env
+.env.*
+!.env.example
+
+# ─── Next.js ─────────────────────────────────────────────────────
+/.next/
+/out/
+/build
+
+# ─── Prisma ──────────────────────────────────────────────────────
+# Keep migrations tracked, ignore generated client
+/node_modules/.prisma
+
+# ─── Testing ─────────────────────────────────────────────────────
+/coverage
+
+# ─── Misc ────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.pem
+
+# ─── Debug logs ──────────────────────────────────────────────────
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ─── Vercel ──────────────────────────────────────────────────────
+.vercel
+
+# ─── TypeScript ──────────────────────────────────────────────────
+*.tsbuildinfo
+next-env.d.ts
