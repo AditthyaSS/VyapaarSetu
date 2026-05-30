@@ -15,11 +15,22 @@ export function useLiveFeed(initialEvents: FeedEvent[] = []) {
     // Fetch initial data from the API
     useEffect(() => {
         fetch("/api/feed?limit=50")
-            .then((r) => r.json())
-            .then((json) => {
-                if (Array.isArray(json.data)) setEvents(json.data as FeedEvent[]);
+            .then((r) => {
+                if (!r.ok) throw new Error("Network error");
+                return r.json();
             })
-            .catch(() => {
+            .then((json) => {
+                // Support for both { data: [...] } and direct [...] JSON responses
+                const fetchedEvents = Array.isArray(json.data) ? json.data : Array.isArray(json) ? json : [];
+                
+                // FIX: Only overwrite the events if the API actually returned new data.
+                // This prevents the ticker from vanishing if the DB is currently empty.
+                if (fetchedEvents.length > 0) {
+                    setEvents(fetchedEvents as FeedEvent[]);
+                }
+            })
+            .catch((err) => {
+                console.error("Live feed fetch error:", err);
                 // Keep initial events on error
             });
     }, []);
