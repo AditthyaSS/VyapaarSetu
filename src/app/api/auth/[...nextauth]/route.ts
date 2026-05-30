@@ -7,27 +7,24 @@ export const authOptions: NextAuthOptions = {
             clientId: process.env.GITHUB_CLIENT_ID ?? "",
             clientSecret: process.env.GITHUB_CLIENT_SECRET ?? "",
             profile(profile) {
-                // Yahan hum GitHub se uska username (login) nikal rahe hain
                 return {
                     id: profile.id.toString(),
                     name: profile.name ?? profile.login,
                     email: profile.email,
                     image: profile.avatar_url,
-                    githubUsername: profile.login, // <-- ASLI GITHUB USERNAME
+                    githubUsername: profile.login, 
                 };
             },
         }),
     ],
     callbacks: {
         async jwt({ token, user }) {
-            // Token mein save karo
             if (user) {
                 token.githubUsername = (user as any).githubUsername;
             }
             return token;
         },
         async session({ session, token }) {
-            // Session mein bhej do taaki Navbar use kar sake
             if (session.user) {
                 (session.user as any).id = token.sub;
                 (session.user as any).githubUsername = token.githubUsername;
