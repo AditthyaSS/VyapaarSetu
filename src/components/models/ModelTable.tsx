@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Model, ModelSortField } from "@/types";
 import { cn, formatPrice, formatContextWindow, formatBenchmark, getBenchmarkColor } from "@/lib/utils";
 import { LiveBadge } from "./LiveBadge";
+import { ProviderLogo } from "@/components/models/ProviderLogo"; 
 
 interface ModelTableProps {
     models: Model[];
@@ -122,6 +123,8 @@ export function ModelTable({ models, showRank = true }: ModelTableProps) {
                                     href={`/models/${model.slug}`}
                                     className="flex items-center gap-2 group-hover:text-atlas-green transition-colors"
                                 >
+                                    <ProviderLogo providerName={model.provider?.name || ""} size={16} />
+                                    
                                     <span className="font-sans font-medium text-atlas-text-primary">
                                         {model.name}
                                     </span>
