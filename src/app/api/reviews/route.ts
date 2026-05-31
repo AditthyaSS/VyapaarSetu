@@ -51,9 +51,25 @@ export async function POST(request: Request) {
             create: { githubUsername, avatarUrl: session.user.image ?? undefined },
         });
 
-        // Create review
-        const review = await prisma.review.create({
-            data: {
+        // Upsert review: one review per user per entity.
+        // Using upsert prevents a single authenticated user from flooding
+        // the database with duplicate reviews by simply re-submitting the
+        // form. A repeat submission updates the existing record instead of
+        // inserting a new row, keeping the data clean without any external
+        // rate-limit store.
+        const review = await prisma.review.upsert({
+            where: {
+                userId_entityType_entityId: {
+                    userId: user.id,
+                    entityType,
+                    entityId,
+                },
+            },
+            update: {
+                rating: Math.round(rating),
+                comment: comment ?? undefined,
+            },
+            create: {
                 userId: user.id,
                 entityType,
                 entityId,
@@ -62,17 +78,20 @@ export async function POST(request: Request) {
             },
         });
 
-        // Create feed event
-        await prisma.feedEvent.create({
-            data: {
-                userId: user.id,
-                eventType: "review_posted",
-                entityType,
-                entityId,
-                entityName: entityId, // will be enriched client-side
-                metadata: { rating },
-            },
-        });
+        // Only emit a feed event when a new review is created, not on updates.
+        const isNewReview = review.createdAt.getTime() === review.updatedAt.getTime();
+        if (isNewReview) {
+            await prisma.feedEvent.create({
+                data: {
+                    userId: user.id,
+                    eventType: "review_posted",
+                    entityType,
+                    entityId,
+                    entityName: entityId, // enriched client-side
+                    metadata: { rating },
+                },
+            });
+        }
 
         return NextResponse.json({ message: "Review submitted.", data: review }, { status: 201 });
     } catch (err) {
