@@ -1,17 +1,52 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { getModelBySlug } from "@/lib/mock-data";
 import { formatPrice, formatContextWindow, formatBenchmark, getBenchmarkColor, cn } from "@/lib/utils";
 import { ReviewSection } from "@/components/models/ReviewSection";
+import { ModelDetailSkeleton } from "@/components/ui/Skeletons";
+import { Model } from "@/types";
 
 export default function ModelDetailPage() {
     const params = useParams();
     const slug = params.slug as string;
-    const model = getModelBySlug(slug);
+    const [model, setModel] = useState<Model | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [notFound, setNotFound] = useState(false);
 
-    if (!model) {
+    useEffect(() => {
+        const controller = new AbortController();
+
+        setIsLoading(true);
+        setNotFound(false);
+
+        fetch(`/api/models/${encodeURIComponent(slug)}`, { signal: controller.signal })
+            .then((res) => {
+                if (res.status === 404) {
+                    setNotFound(true);
+                    return null;
+                }
+                return res.json();
+            })
+            .then((json) => {
+                if (json?.data) {
+                    setModel(json.data as Model);
+                }
+            })
+            .catch((err) => {
+                if ((err as Error).name === "AbortError") return;
+            })
+            .finally(() => setIsLoading(false));
+
+        return () => controller.abort();
+    }, [slug]);
+
+    if (isLoading) {
+        return <ModelDetailSkeleton />;
+    }
+
+    if (!model || notFound) {
         return (
             <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
                 <h1 className="text-2xl font-bold text-atlas-text-primary mb-2">Model not found</h1>
@@ -96,8 +131,16 @@ export default function ModelDetailPage() {
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
                 <SpecCard label="Context Window" value={formatContextWindow(model.contextWindow)} />
                 <SpecCard label="Speed" value={model.speedToksPerSec ? `${model.speedToksPerSec} t/s` : "—"} />
-                <SpecCard label="Input Price" value={`${formatPrice(model.inputPricePerMtok)}/M`} />
-                <SpecCard label="Output Price" value={`${formatPrice(model.outputPricePerMtok)}/M`} />
+                <SpecCard 
+                    label="Input Price" 
+                    value={`${formatPrice(model.inputPricePerMtok)}/M`} 
+                    rawValue={model.inputPricePerMtok} 
+                />
+                <SpecCard 
+                    label="Output Price" 
+                    value={`${formatPrice(model.outputPricePerMtok)}/M`} 
+                    rawValue={model.outputPricePerMtok} 
+                />
                 <SpecCard label="Parameters" value={model.parameterCount || "—"} />
                 <SpecCard label="License" value={model.license || "—"} />
             </div>
@@ -178,15 +221,44 @@ export default function ModelDetailPage() {
     );
 }
 
-function SpecCard({ label, value }: { label: string; value: string }) {
+function SpecCard({ label, value, rawValue }: { label: string; value: string; rawValue?: number }) {
+    const [copied, setCopied] = useState(false);
+
+    const handleCopy = () => {
+        if (rawValue === undefined) return;
+        navigator.clipboard.writeText(rawValue.toString());
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1500);
+    };
+
     return (
-        <div className="p-3 bg-atlas-bg-card border border-atlas-border rounded-lg">
+        <div className="p-3 bg-atlas-bg-card border border-atlas-border rounded-lg relative">
             <p className="text-[10px] font-mono uppercase tracking-wider text-atlas-text-muted mb-1">
                 {label}
             </p>
-            <p className="font-mono text-sm font-medium text-atlas-text-primary">
-                {value}
-            </p>
+            <div className="flex items-center justify-between gap-2">
+                <p className="font-mono text-sm font-medium text-atlas-text-primary">
+                    {value}
+                </p>
+                {/* Copy Button */}
+                {rawValue !== undefined && (
+                    <button
+                        onClick={handleCopy}
+                        className="p-1 rounded hover:bg-atlas-bg-secondary text-atlas-text-muted hover:text-atlas-text-primary transition-all flex-shrink-0"
+                        aria-label="Copy value"
+                        title="Copy raw value"
+                    >
+                        {copied ? (
+                            <span className="text-atlas-green text-sm font-bold block leading-none">✓</span>
+                        ) : (
+                            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                            </svg>
+                        )}
+                    </button>
+                )}
+            </div>
         </div>
     );
 }

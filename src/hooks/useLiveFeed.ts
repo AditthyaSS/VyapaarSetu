@@ -11,15 +11,19 @@ import { subscribeToFeed } from "@/lib/realtime";
  */
 export function useLiveFeed(initialEvents: FeedEvent[] = []) {
     const [events, setEvents] = useState<FeedEvent[]>(initialEvents);
+    const [isLoading, setIsLoading] = useState(initialEvents.length === 0);
 
-    // Fetch initial data from the API
     useEffect(() => {
+        let active = true;
+
         fetch("/api/feed?limit=50")
             .then((r) => {
                 if (!r.ok) throw new Error("Network error");
                 return r.json();
             })
             .then((json) => {
+               if (!active) return;
+                
                 // Support for both { data: [...] } and direct [...] JSON responses
                 const fetchedEvents = Array.isArray(json.data) ? json.data : Array.isArray(json) ? json : [];
                 
@@ -32,10 +36,16 @@ export function useLiveFeed(initialEvents: FeedEvent[] = []) {
             .catch((err) => {
                 console.error("Live feed fetch error:", err);
                 // Keep initial events on error
+            })
+            .finally(() => {
+                if (active) setIsLoading(false);
             });
+
+        return () => {
+            active = false;
+        };
     }, []);
 
-    // Subscribe to realtime inserts
     useEffect(() => {
         const channel = subscribeToFeed((raw) => {
             const event = raw as unknown as FeedEvent;
@@ -47,5 +57,5 @@ export function useLiveFeed(initialEvents: FeedEvent[] = []) {
         };
     }, []);
 
-    return events;
+    return { events, isLoading };
 }
