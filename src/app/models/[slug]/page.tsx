@@ -145,6 +145,14 @@ export default function ModelDetailPage() {
                 <SpecCard label="License" value={model.license || "—"} />
             </div>
 
+            {/* Cost Calculator Section */}
+            <div className="mb-10">
+                <TokenCostCalculator 
+                    inputPrice={model.inputPricePerMtok} 
+                    outputPrice={model.outputPricePerMtok} 
+                />
+            </div>
+
             {/* Benchmark Scores */}
             {benchmarks.length > 0 && (
                 <div className="mb-8">
@@ -221,6 +229,10 @@ export default function ModelDetailPage() {
     );
 }
 
+// ---------------------------------------------------------
+// Helper Components
+// ---------------------------------------------------------
+
 function SpecCard({ label, value, rawValue }: { label: string; value: string; rawValue?: number }) {
     const [copied, setCopied] = useState(false);
 
@@ -240,7 +252,6 @@ function SpecCard({ label, value, rawValue }: { label: string; value: string; ra
                 <p className="font-mono text-sm font-medium text-atlas-text-primary">
                     {value}
                 </p>
-                {/* Copy Button */}
                 {rawValue !== undefined && (
                     <button
                         onClick={handleCopy}
@@ -258,6 +269,120 @@ function SpecCard({ label, value, rawValue }: { label: string; value: string; ra
                         )}
                     </button>
                 )}
+            </div>
+        </div>
+    );
+}
+
+// THE NEW INTERACTIVE COST CALCULATOR
+function TokenCostCalculator({ inputPrice, outputPrice }: { inputPrice?: number | null; outputPrice?: number | null }) {
+    const [inTokens, setInTokens] = useState<number | "">("");
+    const [outTokens, setOutTokens] = useState<number | "">("");
+
+    // Consider it free if both prices are 0, null, or undefined
+    const isFree = (!inputPrice && !outputPrice);
+
+    const presets = [
+        { label: "Short Chat", in: 1000, out: 500 },
+        { label: "Long Article", in: 5000, out: 2000 },
+        { label: "Code Gen", in: 10000, out: 4000 },
+        { label: "Book Analysis", in: 100000, out: 1000 }
+    ];
+
+    const applyPreset = (inVal: number, outVal: number) => {
+        setInTokens(inVal);
+        setOutTokens(outVal);
+    };
+
+    const calculateCost = () => {
+        if (isFree) return 0;
+        const inCost = ((Number(inTokens) || 0) / 1000000) * (inputPrice || 0);
+        const outCost = ((Number(outTokens) || 0) / 1000000) * (outputPrice || 0);
+        return inCost + outCost;
+    };
+
+    const totalCost = calculateCost();
+
+    return (
+        <div className="bg-atlas-bg-card border border-atlas-border rounded-xl p-5 md:p-6 max-w-3xl">
+            <div className="flex items-center justify-between mb-5">
+                <h2 className="font-sans font-semibold text-sm uppercase tracking-widest text-atlas-text-primary">
+                    Cost Calculator
+                </h2>
+                {isFree && (
+                    <span className="text-xs font-mono bg-atlas-green/10 text-atlas-green px-2 py-1 rounded">
+                        Free / Local
+                    </span>
+                )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                {/* Inputs Side */}
+                <div className="space-y-4">
+                    <div className="flex gap-4">
+                        <div className="flex-1">
+                            <label className="block text-xs font-mono text-atlas-text-muted mb-1.5">
+                                Input Tokens
+                            </label>
+                            <input
+                                type="number"
+                                min="0"
+                                value={inTokens}
+                                onChange={(e) => setInTokens(e.target.value === "" ? "" : Number(e.target.value))}
+                                disabled={isFree}
+                                placeholder="e.g. 1000"
+                                className="w-full bg-atlas-bg-secondary border border-atlas-border/50 text-atlas-text-primary text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-atlas-blue focus:ring-1 focus:ring-atlas-blue disabled:opacity-50 disabled:cursor-not-allowed font-mono"
+                            />
+                        </div>
+                        <div className="flex-1">
+                            <label className="block text-xs font-mono text-atlas-text-muted mb-1.5">
+                                Output Tokens
+                            </label>
+                            <input
+                                type="number"
+                                min="0"
+                                value={outTokens}
+                                onChange={(e) => setOutTokens(e.target.value === "" ? "" : Number(e.target.value))}
+                                disabled={isFree}
+                                placeholder="e.g. 500"
+                                className="w-full bg-atlas-bg-secondary border border-atlas-border/50 text-atlas-text-primary text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-atlas-blue focus:ring-1 focus:ring-atlas-blue disabled:opacity-50 disabled:cursor-not-allowed font-mono"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Presets */}
+                    <div>
+                        <p className="text-[10px] font-mono text-atlas-text-muted mb-2">Presets</p>
+                        <div className="flex flex-wrap gap-2">
+                            {presets.map((p) => (
+                                <button
+                                    key={p.label}
+                                    onClick={() => applyPreset(p.in, p.out)}
+                                    disabled={isFree}
+                                    className="px-2.5 py-1 text-[11px] font-medium bg-atlas-bg-tertiary border border-atlas-border hover:border-atlas-text-muted text-atlas-text-secondary rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {p.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Result Side */}
+                <div className="flex flex-col items-center justify-center p-6 bg-atlas-bg-secondary/50 border border-atlas-border/30 rounded-lg">
+                    <span className="text-xs font-mono text-atlas-text-muted mb-2">Estimated Cost</span>
+                    <span className={cn(
+                        "text-4xl font-sans font-bold tracking-tight",
+                        totalCost > 0 ? "text-atlas-text-primary" : "text-atlas-text-muted"
+                    )}>
+                        {totalCost === 0 ? "$0.00" : totalCost < 0.0001 ? "<$0.0001" : `$${totalCost.toFixed(4)}`}
+                    </span>
+                    {!isFree && totalCost > 0 && (
+                        <span className="text-[10px] text-atlas-text-muted mt-2">
+                            Based on provider&apos;s API pricing
+                        </span>
+                    )}
+                </div>
             </div>
         </div>
     );
