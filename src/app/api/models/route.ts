@@ -13,6 +13,28 @@ export async function GET(request: Request) {
     const license = searchParams.get("license");
     const modality = searchParams.get("modality");
     const search = searchParams.get("search");
+    const sort = searchParams.get("sort") || "benchmarkGpqa";
+
+    // 💡 Robust Pagination Controls & Fallback Guards
+    const DEFAULT_LIMIT = 10;
+    const MAX_LIMIT = 50;
+    const DEFAULT_OFFSET = 0;
+
+    const rawLimit = searchParams.get("limit");
+    let limit = rawLimit ? parseInt(rawLimit, 10) : DEFAULT_LIMIT;
+    // NaN Guard & Lower Bounds check
+    if (isNaN(limit) || limit <= 0) {
+        limit = DEFAULT_LIMIT;
+    } else if (limit > MAX_LIMIT) {
+        limit = MAX_LIMIT; // Enforce a hard maximum ceiling to block database exhaustion
+    }
+
+    const rawOffset = searchParams.get("offset");
+    let offset = rawOffset ? parseInt(rawOffset, 10) : DEFAULT_OFFSET;
+    // NaN Guard & Negative check
+    if (isNaN(offset) || offset < 0) {
+        offset = DEFAULT_OFFSET;
+    }
     // Validate sort against the same allowlist used by the DB path so the
     // mock-data fallback cannot be exploited with prototype-polluting keys.
     const allowedSorts = [
@@ -72,8 +94,8 @@ export async function GET(request: Request) {
                 where,
                 include: { provider: true },
                 orderBy: { [orderField]: "desc" },
-                take: limit,
-                skip: offset,
+                take: limit, // Safe clean integer guaranteed
+                skip: offset, // Safe clean integer guaranteed
             }),
             prisma.model.count({ where }),
         ]);
