@@ -58,6 +58,7 @@ export function Footer() {
                             <li>
                                 <a
                                     href="https://github.com/AditthyaSS/AIAtlas"
+                                    href="https://github.com/aditthyass/aiatlas"
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="text-atlas-text-secondary hover:text-atlas-text-primary transition-colors"
