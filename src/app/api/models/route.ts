@@ -35,6 +35,16 @@ export async function GET(request: Request) {
     if (isNaN(offset) || offset < 0) {
         offset = DEFAULT_OFFSET;
     }
+    // Validate sort against the same allowlist used by the DB path so the
+    // mock-data fallback cannot be exploited with prototype-polluting keys.
+    const allowedSorts = [
+        "benchmarkGpqa", "benchmarkMmlu", "name", "contextWindow",
+        "inputPricePerMtok", "outputPricePerMtok", "speedToksPerSec", "createdAt",
+    ];
+    const rawSort = searchParams.get("sort") ?? "";
+    const sort = allowedSorts.includes(rawSort) ? rawSort : "benchmarkGpqa";
+    const limit = Math.min(parseInt(searchParams.get("limit") || "50"), 100);
+    const offset = parseInt(searchParams.get("offset") || "0");
 
     if (!DB_ENABLED) {
         // Fallback: filter mock data
@@ -76,12 +86,8 @@ export async function GET(request: Request) {
             ];
         }
 
-        // Validate sort field against allowed columns
-        const allowedSorts = [
-            "benchmarkGpqa", "benchmarkMmlu", "name", "contextWindow",
-            "inputPricePerMtok", "outputPricePerMtok", "speedToksPerSec", "createdAt",
-        ];
-        const orderField = allowedSorts.includes(sort) ? sort : "benchmarkGpqa";
+        // sort is already validated against allowedSorts above.
+        const orderField = sort;
 
         const [models, total] = await Promise.all([
             prisma.model.findMany({
