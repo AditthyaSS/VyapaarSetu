@@ -87,13 +87,16 @@ export function ModelFilters({
 
             {/* Open Source Toggle */}
             <label className="flex items-center gap-2 cursor-pointer select-none">
-                <input
-                    type="checkbox"
-                    checked={filters.isOpenSource || false}
-                    onChange={(e) => updateFilter("isOpenSource", e.target.checked || undefined)}
-                    className="sr-only peer"
-                />
-                <div className="w-8 h-4 bg-atlas-bg-tertiary border border-atlas-border rounded-full peer-checked:bg-atlas-green/30 peer-checked:border-atlas-green/50 transition-colors relative">
+                <div className="relative w-8 h-4">
+                    <input
+                        type="checkbox"
+                        checked={filters.isOpenSource || false}
+                        onChange={(e) => updateFilter("isOpenSource", e.target.checked || undefined)}
+                        className="sr-only peer"
+                    />
+                    {/* Track */}
+                    <div className="w-full h-full bg-atlas-bg-tertiary border border-atlas-border rounded-full peer-checked:bg-atlas-green/30 peer-checked:border-atlas-green/50 transition-colors" />
+                    {/* Knob */}
                     <div className="absolute top-0.5 left-0.5 w-3 h-3 bg-atlas-text-muted rounded-full peer-checked:translate-x-4 transition-transform peer-checked:bg-atlas-green" />
                 </div>
                 <span className="text-xs font-mono uppercase tracking-wider text-atlas-text-secondary">
