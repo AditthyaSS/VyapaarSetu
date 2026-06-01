@@ -14,8 +14,27 @@ export async function GET(request: Request) {
     const modality = searchParams.get("modality");
     const search = searchParams.get("search");
     const sort = searchParams.get("sort") || "benchmarkGpqa";
-    const limit = Math.min(parseInt(searchParams.get("limit") || "50"), 100);
-    const offset = parseInt(searchParams.get("offset") || "0");
+
+    // 💡 Robust Pagination Controls & Fallback Guards
+    const DEFAULT_LIMIT = 10;
+    const MAX_LIMIT = 50;
+    const DEFAULT_OFFSET = 0;
+
+    const rawLimit = searchParams.get("limit");
+    let limit = rawLimit ? parseInt(rawLimit, 10) : DEFAULT_LIMIT;
+    // NaN Guard & Lower Bounds check
+    if (isNaN(limit) || limit <= 0) {
+        limit = DEFAULT_LIMIT;
+    } else if (limit > MAX_LIMIT) {
+        limit = MAX_LIMIT; // Enforce a hard maximum ceiling to block database exhaustion
+    }
+
+    const rawOffset = searchParams.get("offset");
+    let offset = rawOffset ? parseInt(rawOffset, 10) : DEFAULT_OFFSET;
+    // NaN Guard & Negative check
+    if (isNaN(offset) || offset < 0) {
+        offset = DEFAULT_OFFSET;
+    }
 
     if (!DB_ENABLED) {
         // Fallback: filter mock data
@@ -69,8 +88,8 @@ export async function GET(request: Request) {
                 where,
                 include: { provider: true },
                 orderBy: { [orderField]: "desc" },
-                take: limit,
-                skip: offset,
+                take: limit, // Safe clean integer guaranteed
+                skip: offset, // Safe clean integer guaranteed
             }),
             prisma.model.count({ where }),
         ]);
