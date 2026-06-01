@@ -62,6 +62,22 @@ export async function POST(request: Request) {
             },
         });
 
+        // Fetch the human-readable entity name
+        let entityName = "Unknown Entity";
+        if (entityType === "model") {
+            const m = await prisma.model.findUnique({
+                where: { id: entityId },
+                select: { name: true },
+            });
+            if (m) entityName = m.name;
+        } else if (entityType === "tool") {
+            const t = await prisma.tool.findUnique({
+                where: { id: entityId },
+                select: { name: true },
+            });
+            if (t) entityName = t.name;
+        }
+
         // Create feed event
         await prisma.feedEvent.create({
             data: {
@@ -69,7 +85,7 @@ export async function POST(request: Request) {
                 eventType: "review_posted",
                 entityType,
                 entityId,
-                entityName: entityId, // will be enriched client-side
+                entityName,
                 metadata: { rating },
             },
         });
