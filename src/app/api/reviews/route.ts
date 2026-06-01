@@ -36,6 +36,38 @@ export async function POST(request: Request) {
             );
         }
 
+        // Validate entityId: must be a non-empty string within a safe length limit.
+        // Without this check an attacker can submit megabyte-length strings or values
+        // that do not correspond to any real entity, polluting the database.
+        if (typeof entityId !== "string" || entityId.trim().length === 0) {
+            return NextResponse.json(
+                { error: "entityId must be a non-empty string." },
+                { status: 400 }
+            );
+        }
+        if (entityId.length > 100) {
+            return NextResponse.json(
+                { error: "entityId must not exceed 100 characters." },
+                { status: 400 }
+            );
+        }
+
+        // Validate comment length to prevent oversized text from reaching the database.
+        if (comment !== undefined && comment !== null) {
+            if (typeof comment !== "string") {
+                return NextResponse.json(
+                    { error: "comment must be a string." },
+                    { status: 400 }
+                );
+            }
+            if (comment.length > 2000) {
+                return NextResponse.json(
+                    { error: "comment must not exceed 2000 characters." },
+                    { status: 400 }
+                );
+            }
+        }
+
         if (!DB_ENABLED) {
             return NextResponse.json(
                 { message: "Review received (DB not connected — configure DATABASE_URL to persist).", status: "pending" },
