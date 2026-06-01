@@ -1,7 +1,9 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+let cachedBrowserClient: SupabaseClient | null = null;
 
 // Returns true only when the value looks like a real URL, not a placeholder
 function isValidUrl(value: string | undefined): value is string {
@@ -16,11 +18,15 @@ function isValidUrl(value: string | undefined): value is string {
 
 // Browser client — safe to use on the client side
 export function getSupabaseBrowserClient() {
+    if (cachedBrowserClient) {
+        return cachedBrowserClient;
+    }
     if (!isValidUrl(supabaseUrl) || !supabaseAnonKey || supabaseAnonKey.startsWith("your_")) {
         // Silently disabled — Supabase not configured yet
         return null;
     }
-    return createClient(supabaseUrl, supabaseAnonKey);
+    cachedBrowserClient = createClient(supabaseUrl, supabaseAnonKey);
+    return cachedBrowserClient;
 }
 
 // Server client — uses service role key, never expose to browser
