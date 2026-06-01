@@ -57,7 +57,7 @@ export function Footer() {
                             </li>
                             <li>
                                 <a
-                                    href="https://github.com"
+                                    href="https://github.com/AditthyaSS/AIAtlas"
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="text-atlas-text-secondary hover:text-atlas-text-primary transition-colors"
@@ -65,6 +65,17 @@ export function Footer() {
                                     GitHub
                                 </a>
                             </li>
+                            <li>
+                            <a
+                                href="https://github.com/AditthyaSS/AIAtlas/issues"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-atlas-text-secondary hover:text-atlas-text-primary transition-colors"
+                            >
+                                 Feedback
+                            </a>
+                            </li>
+
                         </ul>
                     </div>
 
