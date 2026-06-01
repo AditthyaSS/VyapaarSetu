@@ -20,6 +20,7 @@ model User {
   contributions     Contribution[]
   votes             Vote[]
   feedEvents        FeedEvent[]
+  badges            UserBadge[]
 
   @@map("users")
 }
@@ -203,4 +204,16 @@ model FeedEvent {
   user       User?    @relation(fields: [userId], references: [id])
 
   @@map("feed_events")
+}
+
+model UserBadge {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  badgeType String   @map("badge_type") // e.g. "NEW_CONTRIBUTOR", "ACTIVE_CONTRIBUTOR", "TOP_CONTRIBUTOR", "VERIFIED_CONTRIBUTOR"
+  awardedAt DateTime @default(now()) @map("awarded_at")
+
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, badgeType])
+  @@map("user_badges")
 }

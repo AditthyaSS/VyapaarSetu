@@ -14,6 +14,7 @@ const navLinks = [
     { href: "/tools", label: "Tools" },
     { href: "/repos", label: "Repos" },
     { href: "/feed", label: "Feed" },
+    { href: "/contributors", label: "Community" },
 ];
 
 export function Navbar() {

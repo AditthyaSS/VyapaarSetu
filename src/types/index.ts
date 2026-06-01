@@ -8,6 +8,9 @@ export interface User {
     bio?: string;
     contributionScore: number;
     createdAt: string;
+    badges?: UserBadge[];
+    reviews?: Review[];
+    contributions?: Contribution[];
 }
 
 export interface Provider {
@@ -130,6 +133,13 @@ export interface FeedEvent {
     metadata?: Record<string, unknown>;
     createdAt: string;
     user?: User;
+}
+
+export interface UserBadge {
+    id: string;
+    userId: string;
+    badgeType: "NEW_CONTRIBUTOR" | "ACTIVE_CONTRIBUTOR" | "TOP_CONTRIBUTOR" | "VERIFIED_CONTRIBUTOR";
+    awardedAt: string;
 }
 
 // Filter/sort types
