@@ -36,6 +36,38 @@ export async function POST(request: Request) {
             );
         }
 
+        // Validate entityId: must be a non-empty string within a safe length limit.
+        // Without this check an attacker can submit megabyte-length strings or values
+        // that do not correspond to any real entity, polluting the database.
+        if (typeof entityId !== "string" || entityId.trim().length === 0) {
+            return NextResponse.json(
+                { error: "entityId must be a non-empty string." },
+                { status: 400 }
+            );
+        }
+        if (entityId.length > 100) {
+            return NextResponse.json(
+                { error: "entityId must not exceed 100 characters." },
+                { status: 400 }
+            );
+        }
+
+        // Validate comment length to prevent oversized text from reaching the database.
+        if (comment !== undefined && comment !== null) {
+            if (typeof comment !== "string") {
+                return NextResponse.json(
+                    { error: "comment must be a string." },
+                    { status: 400 }
+                );
+            }
+            if (comment.length > 2000) {
+                return NextResponse.json(
+                    { error: "comment must not exceed 2000 characters." },
+                    { status: 400 }
+                );
+            }
+        }
+
         if (!DB_ENABLED) {
             return NextResponse.json(
                 { message: "Review received (DB not connected — configure DATABASE_URL to persist).", status: "pending" },
@@ -51,9 +83,25 @@ export async function POST(request: Request) {
             create: { githubUsername, avatarUrl: session.user.image ?? undefined },
         });
 
-        // Create review
-        const review = await prisma.review.create({
-            data: {
+        // Upsert review: one review per user per entity.
+        // Using upsert prevents a single authenticated user from flooding
+        // the database with duplicate reviews by simply re-submitting the
+        // form. A repeat submission updates the existing record instead of
+        // inserting a new row, keeping the data clean without any external
+        // rate-limit store.
+        const review = await prisma.review.upsert({
+            where: {
+                userId_entityType_entityId: {
+                    userId: user.id,
+                    entityType,
+                    entityId,
+                },
+            },
+            update: {
+                rating: Math.round(rating),
+                comment: comment ?? undefined,
+            },
+            create: {
                 userId: user.id,
                 entityType,
                 entityId,
@@ -62,33 +110,36 @@ export async function POST(request: Request) {
             },
         });
 
-        // Fetch the human-readable entity name
-        let entityName = "Unknown Entity";
-        if (entityType === "model") {
-            const m = await prisma.model.findUnique({
-                where: { id: entityId },
-                select: { name: true },
-            });
-            if (m) entityName = m.name;
-        } else if (entityType === "tool") {
-            const t = await prisma.tool.findUnique({
-                where: { id: entityId },
-                select: { name: true },
-            });
-            if (t) entityName = t.name;
-        }
+        // Only emit a feed event when a new review is created, not on updates.
+        const isNewReview = review.createdAt.getTime() === review.updatedAt.getTime();
+        if (isNewReview) {
+            // Fetch the human-readable entity name
+            let entityName = "Unknown Entity";
+            if (entityType === "model") {
+                const m = await prisma.model.findUnique({
+                    where: { id: entityId },
+                    select: { name: true },
+                });
+                if (m) entityName = m.name;
+            } else if (entityType === "tool") {
+                const t = await prisma.tool.findUnique({
+                    where: { id: entityId },
+                    select: { name: true },
+                });
+                if (t) entityName = t.name;
+            }
 
-        // Create feed event
-        await prisma.feedEvent.create({
-            data: {
-                userId: user.id,
-                eventType: "review_posted",
-                entityType,
-                entityId,
-                entityName,
-                metadata: { rating },
-            },
-        });
+            await prisma.feedEvent.create({
+                data: {
+                    userId: user.id,
+                    eventType: "review_posted",
+                    entityType,
+                    entityId,
+                    entityName,
+                    metadata: { rating },
+                },
+            });
+        }
 
         return NextResponse.json({ message: "Review submitted.", data: review }, { status: 201 });
     } catch (err) {

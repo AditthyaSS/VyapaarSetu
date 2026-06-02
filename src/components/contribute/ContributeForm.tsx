@@ -55,18 +55,32 @@ export function ContributeForm() {
         setStatus("submitting");
         setErrorMsg("");
 
+        // 💡 1. Sanitize text string fields via whitespace trimming
+        const sanitizedName = form.name.trim();
+        const sanitizedProvider = form.provider.trim();
+        const sanitizedDescription = form.description.trim();
+        const sanitizedLicense = form.license.trim();
+
+        // 💡 2. Validation Check: Ensure required fields are not bypassed with empty spaces
+        if (!sanitizedName || !sanitizedProvider) {
+            setStatus("error");
+            setErrorMsg("Model Name and Provider are required fields and cannot be empty.");
+            return;
+        }
+
         try {
             const res = await fetch("/api/models", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
+                // 💡 3. Map sanitized values into the outbound submission body
                 body: JSON.stringify({
-                    name: form.name,
-                    provider: form.provider,
-                    description: form.description,
+                    name: sanitizedName,
+                    provider: sanitizedProvider,
+                    description: sanitizedDescription || undefined,
                     contextWindow: form.contextWindow ? parseInt(form.contextWindow) : undefined,
                     inputPricePerMtok: form.inputPricePerMtok ? parseFloat(form.inputPricePerMtok) : undefined,
                     outputPricePerMtok: form.outputPricePerMtok ? parseFloat(form.outputPricePerMtok) : undefined,
-                    license: form.license,
+                    license: sanitizedLicense || undefined,
                     modalities: form.modalities
                         ? form.modalities.split(",").map((s) => s.trim()).filter(Boolean)
                         : ["text"],
