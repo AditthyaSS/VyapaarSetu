@@ -113,13 +113,29 @@ export async function POST(request: Request) {
         // Only emit a feed event when a new review is created, not on updates.
         const isNewReview = review.createdAt.getTime() === review.updatedAt.getTime();
         if (isNewReview) {
+            // Fetch the human-readable entity name
+            let entityName = "Unknown Entity";
+            if (entityType === "model") {
+                const m = await prisma.model.findUnique({
+                    where: { id: entityId },
+                    select: { name: true },
+                });
+                if (m) entityName = m.name;
+            } else if (entityType === "tool") {
+                const t = await prisma.tool.findUnique({
+                    where: { id: entityId },
+                    select: { name: true },
+                });
+                if (t) entityName = t.name;
+            }
+
             await prisma.feedEvent.create({
                 data: {
                     userId: user.id,
                     eventType: "review_posted",
                     entityType,
                     entityId,
-                    entityName: entityId, // enriched client-side
+                    entityName,
                     metadata: { rating },
                 },
             });
