@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession, signIn } from "next-auth/react";
 import { timeAgo } from "@/lib/utils";
 import { Review } from "@/types";
@@ -60,6 +60,29 @@ export function ReviewSection({ modelId, modelName, initialReviews = [] }: Revie
             ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
             : 0;
 
+    const loadReviews = async () => {
+        try {
+            const res = await fetch(
+                `/api/reviews?entityType=model&entityId=${encodeURIComponent(modelId)}`
+            );
+
+            if (!res.ok) {
+                const json = await res.json();
+                throw new Error(json.error ?? "Failed to load reviews");
+            }
+
+            const json = await res.json();
+            setReviews(json.data ?? []);
+        } catch (err) {
+            console.error("Failed to load reviews", err);
+        }
+    };
+
+    useEffect(() => {
+        if (!modelId) return;
+        loadReviews();
+    }, [modelId]);
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!session) { signIn("github"); return; }
@@ -102,6 +125,7 @@ export function ReviewSection({ modelId, modelName, initialReviews = [] }: Revie
             setReviews((prev) => [newReview, ...prev]);
             setRating(0);
             setComment("");
+            await loadReviews();
             setStatus("success");
         } catch (err) {
             setStatus("error");

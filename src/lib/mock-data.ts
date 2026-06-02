@@ -1,4 +1,4 @@
-import { Model, Provider, FeedEvent } from "@/types";
+import { Model, Provider, FeedEvent, Review, User } from "@/types";
 
 export const mockProviders: Provider[] = [
     { id: "p1", name: "Anthropic", website: "https://anthropic.com", hqCountry: "US", createdAt: "2024-01-01" },
@@ -201,6 +201,49 @@ export const mockFeedEvents: FeedEvent[] = [
         user: { id: "u4", githubUsername: "techwatch", contributionScore: 12, createdAt: "2025-01-01" },
     },
 ];
+
+export const mockReviews: Review[] = [
+    {
+        id: "r1",
+        userId: "u5",
+        entityType: "model",
+        entityId: "m7",
+        rating: 5,
+        comment: "Incredible model for multimodal tasks and speedy responses.",
+        helpfulVotes: 12,
+        createdAt: "2025-06-01T12:00:00.000Z",
+        updatedAt: "2025-06-01T12:00:00.000Z",
+        user: {
+            id: "u5",
+            githubUsername: "emma-ai",
+            contributionScore: 45,
+            createdAt: "2024-06-15",
+        },
+    },
+    {
+        id: "r2",
+        userId: "u6",
+        entityType: "model",
+        entityId: "m7",
+        rating: 4,
+        comment: "Great all-around performance, but pricing can be high for smaller teams.",
+        helpfulVotes: 7,
+        createdAt: "2025-06-05T08:30:00.000Z",
+        updatedAt: "2025-06-05T08:30:00.000Z",
+        user: {
+            id: "u6",
+            githubUsername: "ai_expert",
+            contributionScore: 30,
+            createdAt: "2024-07-20",
+        },
+    },
+];
+
+export function getReviewsByEntity(entityType: "model" | "tool", entityId: string): Review[] {
+    return mockReviews
+        .filter((review) => review.entityType === entityType && review.entityId === entityId)
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+}
 
 export function getModelBySlug(slug: string): Model | undefined {
     return mockModels.find((m) => m.slug === slug);
