@@ -1,8 +1,45 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
+import { getReviewsByEntity } from "@/lib/mock-data";
 
 const DB_ENABLED = !!(process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("[password]"));
+
+export async function GET(request: Request) {
+    const url = new URL(request.url);
+    const entityType = url.searchParams.get("entityType");
+    const entityId = url.searchParams.get("entityId");
+
+    if (!entityType || !entityId) {
+        return NextResponse.json(
+            { error: "entityType and entityId are required" },
+            { status: 400 }
+        );
+    }
+
+    if (!["model", "tool"].includes(entityType)) {
+        return NextResponse.json(
+            { error: "entityType must be 'model' or 'tool'" },
+            { status: 400 }
+        );
+    }
+
+    if (!DB_ENABLED) {
+        return NextResponse.json({ data: getReviewsByEntity(entityType as "model" | "tool", entityId) });
+    }
+
+    try {
+        const reviews = await prisma.review.findMany({
+            where: { entityType, entityId },
+            include: { user: true },
+            orderBy: { createdAt: "desc" },
+        });
+        return NextResponse.json({ data: reviews });
+    } catch (err) {
+        console.error("GET /api/reviews error:", err);
+        return NextResponse.json({ error: "Failed to fetch reviews" }, { status: 500 });
+    }
+}
 
 // POST /api/reviews — submit a review for a model or tool
 export async function POST(request: Request) {

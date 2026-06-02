@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getModelBySlug } from "@/lib/mock-data";
+import { getModelBySlug, getReviewsByEntity } from "@/lib/mock-data";
 
 const DB_ENABLED = !!(process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("[password]"));
 
@@ -12,7 +12,7 @@ export async function GET(
     if (!DB_ENABLED) {
         const model = getModelBySlug(params.slug);
         if (!model) return NextResponse.json({ error: "Model not found" }, { status: 404 });
-        return NextResponse.json({ data: model });
+        return NextResponse.json({ data: { ...model, reviews: getReviewsByEntity("model", model.id) } });
     }
 
     try {
@@ -27,7 +27,13 @@ export async function GET(
             return NextResponse.json({ error: "Model not found" }, { status: 404 });
         }
 
-        return NextResponse.json({ data: model });
+        const reviews = await prisma.review.findMany({
+            where: { entityType: "model", entityId: model.id },
+            include: { user: true },
+            orderBy: { createdAt: "desc" },
+        });
+
+        return NextResponse.json({ data: { ...model, reviews } });
     } catch (err) {
         console.error("GET /api/models/[slug] error:", err);
         return NextResponse.json({ error: "Failed to fetch model" }, { status: 500 });
